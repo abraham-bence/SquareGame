@@ -1,6 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
-using Unity.Mathematics;
+//using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UIElements;
@@ -86,6 +86,14 @@ public class PlayerMovement : MonoBehaviour
         Flip();
     }
 
+    public void Attack(InputAction.CallbackContext context)
+    {
+        if (context.performed)
+        {
+            Debug.Log(Input.mousePosition);
+        }
+    }
+
     IEnumerator Dash()
     {
         canDash = false;
@@ -109,7 +117,6 @@ public class PlayerMovement : MonoBehaviour
             StartCoroutine(Dash());
         }
     }
-
     public void Jump(InputAction.CallbackContext context)
     {
         if (lastGroundedTime > 0 && context.performed)
@@ -122,7 +129,6 @@ public class PlayerMovement : MonoBehaviour
             lastGroundedTime = 0f;
         }
     }
-
     private void JumpGravity()
     {
         if (rb.velocity.y < 0)
@@ -159,7 +165,6 @@ public class PlayerMovement : MonoBehaviour
             transform.localScale = localScale;
         }
     }
-
     public void Move(InputAction.CallbackContext context)
     {
         horizontal = context.ReadValue<Vector2>().x;
