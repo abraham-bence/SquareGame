@@ -86,11 +86,13 @@ public class PlayerMovement : MonoBehaviour
         Flip();
     }
 
+    public Transform square;
     public void Attack(InputAction.CallbackContext context)
     {
         if (context.performed)
         {
             Debug.Log(Input.mousePosition);
+            Vector3.Slerp(square.position, Input.mousePosition, 0.9f);
         }
     }
 
@@ -106,6 +108,7 @@ public class PlayerMovement : MonoBehaviour
         rb.gravityScale = originalGravity;
         isDashing = false;
         dashTrail.emitting = false;
+        dashTrail.Clear();
         yield return new WaitForSeconds(DashCooldown);
         canDash = true;
 
