@@ -5,8 +5,11 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UIElements;
 
+
 public class PlayerMovement : MonoBehaviour
 {
+    public static PlayerMovement main;
+    [SerializeField] PlayerInput controls;
     public Rigidbody2D rb;
 
     //Jump
@@ -14,11 +17,21 @@ public class PlayerMovement : MonoBehaviour
     public LayerMask groundLayer;
     private float lastGroundedTime;
     private float jumpCoyoteTime = 0.2f;
-    //Wall Jump
-
+    //Wall Slide
     public Transform wallCheck;
     [SerializeField] public LayerMask wallLayer;
+    private bool isWallSliding;
+    [SerializeField] float wallSlidingSpeed = 2f;
 
+    //Wall jump
+    private bool isWallJumping;
+    private float wallJumoingDirection;
+    private float wallJumpingTime = 0.2f;
+    private float wallJUmpingCounter;
+    private float wallJumpingDuration = 0.4f;
+    private Vector2 wallJumpingPower = new Vector2(12f, 24f);
+
+    //Jump
     public float speed;
     public float JumpingPower;
 
@@ -42,97 +55,17 @@ public class PlayerMovement : MonoBehaviour
     public float decceleration = 7f;
     public float velPower = 1f;
 
-    
-    void Start()
+    public float rotationSpeed;
+
+    public float cameraYPos = 0;
+
+    private void Awake()
     {
+        main = this;
+        controls.ActivateInput();
     }
+
     void Update()
-    {
-        transform.rotation = Quaternion.identity;
-
-        //Move
-
-        float targetSpeed = horizontal * speed;
-        float speedDif = targetSpeed - rb.velocity.x;
-        float accelRate = (Mathf.Abs(speedDif) > 0.01f) ? acceleration : decceleration;
-        float movement = Mathf.Pow(Mathf.Abs(speedDif) * accelRate, velPower) * Mathf.Sign(speedDif);
-
-        if (WallCheck() && !IsGrounded())
-        {
-            rb.velocity = new Vector2(rb.velocity.x, rb.velocity.y * 0.8f);
-            if (direction == horizontal)
-            {
-                rb.AddForce(movement * Vector2.right);
-
-            }
-            return;
-        }
-        if (isDashing)
-        {
-            return;
-        }
-        if (IsGrounded())
-        {
-            lastGroundedTime = jumpCoyoteTime;
-        }
-        else
-        {
-            lastGroundedTime -= Time.deltaTime;
-        }
-
-        rb.AddForce(movement * Vector2.right,ForceMode2D.Force);
-
-        JumpGravity();
-        Flip();
-    }
-
-    public Transform square;
-    public void Attack(InputAction.CallbackContext context)
-    {
-        if (context.performed)
-        {
-            Debug.Log(Input.mousePosition);
-            Vector3.Slerp(square.position, Input.mousePosition, 0.9f);
-        }
-    }
-
-    IEnumerator Dash()
-    {
-        canDash = false;
-        isDashing = true;
-        float originalGravity = rb.gravityScale;
-        rb.gravityScale = 0f;
-        rb.velocity = new Vector2(transform.localScale.x * DashPower, 0);
-        dashTrail.emitting = true;
-        yield return new WaitForSeconds(dashTime);
-        rb.gravityScale = originalGravity;
-        isDashing = false;
-        dashTrail.emitting = false;
-        dashTrail.Clear();
-        yield return new WaitForSeconds(DashCooldown);
-        canDash = true;
-
-    }
-    public void Dash(InputAction.CallbackContext context)
-    {
-        if (context.performed && canDash)
-        {
-            StartCoroutine(Dash());
-        }
-    }
-    public void Jump(InputAction.CallbackContext context)
-    {
-        if (lastGroundedTime > 0 && context.performed)
-        {
-            rb.AddForce(Vector2.up * JumpingPower, ForceMode2D.Impulse);
-        }
-        if (context.canceled && rb.velocity.y > 0f)
-        {
-            rb.velocity = new Vector2 (rb.velocity.x, rb.velocity.y * 0.5f);
-            lastGroundedTime = 0f;
-        }
-    }
-    private void JumpGravity()
     {
         if (rb.velocity.y < 0)
         {
@@ -142,6 +75,26 @@ public class PlayerMovement : MonoBehaviour
         {
             rb.gravityScale = gravityScale;
         }
+    }
+
+    private void WallJump()
+    {
+        if(isWallSliding)
+        {
+            Debug.Log("sliding");
+            isWallJumping = false;
+            wallJumoingDirection = -transform.localScale.x;
+            wallJUmpingCounter = wallJumpingTime;
+            CancelInvoke(nameof(StopWallJumping));
+        }
+        else
+        {
+            wallJUmpingCounter -= Time.deltaTime;
+        }
+    }
+    private void StopWallJumping()
+    {
+        isWallJumping = false;
     }
     //private void OnDrawGizmos()
     //{
@@ -156,6 +109,19 @@ public class PlayerMovement : MonoBehaviour
     private bool WallCheck()
     {
         return Physics2D.OverlapCircle(wallCheck.position, 0.2f, wallLayer);
+    }
+
+    private void WallSlide()
+    {
+        if(WallCheck() && !IsGrounded())
+        {
+            isWallSliding = true;
+            rb.velocity = new Vector2(rb.velocity.x, Mathf.Clamp(rb.velocity.y, -wallSlidingSpeed, float.MaxValue));
+        }
+        else
+        {
+            isWallSliding = false;
+        }
     }
     private void Flip()
     {
