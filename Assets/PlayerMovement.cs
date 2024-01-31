@@ -65,22 +65,19 @@ public class PlayerMovement : MonoBehaviour
         controls.ActivateInput();
     }
 
-    //void Update()
-    //{
-    //    if (rb.velocity.y < 0)
-    //    {
-    //        rb.gravityScale = gravityScale * gravityScaleMultiplier;
-    //    }
-    //    else
-    //    {
-    //        rb.gravityScale = gravityScale;
-    //    }
-    //}
-    void Update()
+void Update()
     {
         transform.rotation = Quaternion.identity;
 
         //Move
+        if (rb.velocity.y < 0)
+        {
+            rb.gravityScale = gravityScale * gravityScaleMultiplier;
+        }
+        else
+        {
+            rb.gravityScale = gravityScale;
+        }
 
         float targetSpeed = horizontal * speed;
         float speedDif = targetSpeed - rb.velocity.x;
@@ -161,11 +158,13 @@ public class PlayerMovement : MonoBehaviour
         if (lastGroundedTime > 0 && context.performed)
         {
             rb.AddForce(Vector2.up * JumpingPower, ForceMode2D.Impulse);
+            Debug.Log("Jump");
         }
-        if (context.performed && wallJUmpingCounter > 0f)
+        if (context.performed && wallJUmpingCounter > 0f && !isWallJumping)
         {
+            Debug.Log("wallJump");
             isWallJumping = true;
-            rb.velocity = new Vector2(wallJumoingDirection * wallJumpingPower.x, wallJumpingPower.y);
+            rb.AddForce(new Vector2(wallJumoingDirection * wallJumpingPower.x, wallJumpingPower.y),ForceMode2D.Impulse);
             wallJUmpingCounter = 0f;
 
             if (transform.localScale.x != wallJumoingDirection)
@@ -201,7 +200,6 @@ public class PlayerMovement : MonoBehaviour
     {
         if(isWallSliding)
         {
-            Debug.Log("sliding");
             isWallJumping = false;
             wallJumoingDirection = -transform.localScale.x;
             wallJUmpingCounter = wallJumpingTime;
